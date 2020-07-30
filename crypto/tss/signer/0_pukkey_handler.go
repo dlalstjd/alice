@@ -40,12 +40,12 @@ type pubkeyData struct {
 }
 
 type pubkeyHandler struct {
-	wi        *big.Int
+	wi        *big.Int //birkhoff coeffiecient
 	msg       []byte
 	publicKey *pt.ECPoint
 
 	g              *pt.ECPoint
-	aiMta          mta.Mta
+	aiMta          mta.Mta // random a & k
 	homo           homo.Crypto
 	agCommitmenter *commitment.HashCommitmenter
 
