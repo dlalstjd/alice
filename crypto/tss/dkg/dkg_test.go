@@ -60,6 +60,29 @@ var _ = Describe("DKG", func() {
 		}
 		time.Sleep(1 * time.Second)
 
+		w1 := new(big.Int)
+		w1, ok := w1.SetString("112332270361357099242860570122751579749055294341687491753573206780048308992961", 10)
+		if !ok {
+			fmt.Println("SetString: error")
+			return
+		}
+		w2 := new(big.Int)
+		w2, z := w2.SetString("52499465992485699444253294333121956137594588489091155873944588352097499515733", 10)
+		if !z {
+			fmt.Println("SetString: error")
+			return
+		}
+		w3 := new(big.Int)
+		w3, zz := w3.SetString("50856700722530491308953183600738794635104088722237017226621783691376872604642", 10)
+		if !zz {
+			fmt.Println("SetString: error")
+			return
+		}
+		pri := big.NewInt(0)
+		pri = new(big.Int).Add(pri, w1)
+		pri = new(big.Int).Add(pri, w2)
+		pri = new(big.Int).Add(pri, w3)
+		fmt.Printf("private key test: %d\n", pri)
 		// Build public key
 		secret := big.NewInt(0)
 		for _, d := range dkgs {
