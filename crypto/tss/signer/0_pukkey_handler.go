@@ -17,6 +17,7 @@ package signer
 import (
 	"crypto/elliptic"
 	"errors"
+	fmt "fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -220,5 +221,6 @@ func buildWiAndPeers(curveN *big.Int, bks map[string]*birkhoffinterpolation.BkPa
 	}
 	wi := new(big.Int).Mul(secret, scalars[0])
 	wi = new(big.Int).Mod(wi, curveN)
+	fmt.Printf("wi: %d\n", wi)
 	return wi, peers, nil
 }

@@ -109,44 +109,6 @@ var _ = Describe("Signer", func() {
 		for _, l := range listeners {
 			l.AssertExpectations(GinkgoT())
 		}
-
-		x := new(big.Int)
-		x, ok := x.SetString("85556674236879568521519464397895875853009790432415548013957742860428482257814", 10)
-		if !ok {
-			return
-		}
-
-		y := new(big.Int)
-		y, okok := y.SetString("30994920491134501242484194368073251458639356656492191736687915449103623375987", 10)
-		if !okok {
-			return
-		}
-
-		rr := new(big.Int)
-		rr, okokok := rr.SetString("29860421401746323085666773732583269052286762170227307798122711355561284363296", 10)
-		if !okokok {
-			return
-		}
-
-		rs := new(big.Int)
-		rs, o := rs.SetString("25398801185773830584947880320881540957958746367752501504457184409022103774550", 10)
-		if !o {
-			return
-		}
-
-		ecdsaPublicKey1 := &ecdsa.PublicKey{
-			Curve: expPublic.GetCurve(),
-			X:     x,
-			Y:     y,
-			//X:     expPublic.GetX(),
-			//Y:     expPublic.GetY(),
-		}
-
-		msg = []byte{101, 76, 2, 206, 14, 133, 132, 177, 17, 12, 19, 100, 189, 78, 153, 159, 62, 37, 106, 6, 191, 114, 151, 81, 10, 110, 208, 163, 0, 39, 217, 27}
-		Expect(ecdsa.Verify(ecdsaPublicKey1, msg, rr, rs)).Should(BeTrue())
-		verify := ecdsa.Verify(ecdsaPublicKey1, msg, rr, rs)
-		fmt.Sprint(verify)
-
 	},
 		Entry("(shareX, shareY, rank):(1,3,0),(10,111,0),(20,421,0)", [][]*big.Int{
 			{big.NewInt(1), big.NewInt(3), big.NewInt(0)},

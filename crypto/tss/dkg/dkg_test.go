@@ -64,8 +64,11 @@ var _ = Describe("DKG", func() {
 		secret := big.NewInt(0)
 		for _, d := range dkgs {
 			d.Stop()
+			fmt.Printf("u0: %d\n", d.ph.poly.Get(0))
 			secret = new(big.Int).Add(secret, d.ph.poly.Get(0))
+			fmt.Printf("secret for every loop: %d\n", secret)
 		}
+		fmt.Printf("secret: %d\n", secret)
 		pubkey := ecpointgrouplaw.ScalarBaseMult(c, secret)
 		for _, d := range dkgs {
 			r, err := d.GetResult()
@@ -82,16 +85,18 @@ var _ = Describe("DKG", func() {
 				0, 0, 0, 0, 0,
 			},
 		),
-		Entry("Case #1", curve, uint32(3),
-			[]uint32{
-				0, 0, 0, 1, 1,
-			},
-		),
-		Entry("Case #2", curve, uint32(3),
-			[]uint32{
-				0, 0, 1, 1, 1,
-			},
-		),
+		/*
+			Entry("Case #1", curve, uint32(3),
+				[]uint32{
+					0, 0, 0, 1, 1,
+				},
+			),
+			Entry("Case #2", curve, uint32(3),
+				[]uint32{
+					0, 0, 1, 1, 1,
+				},
+			),
+		*/
 	)
 
 	DescribeTable("newDKGWithHandler", func(c elliptic.Curve, threshold uint32, coefficients [][]*big.Int, x []*big.Int, ranks []uint32, expectShare []*big.Int, expPubKey *ecpointgrouplaw.ECPoint) {

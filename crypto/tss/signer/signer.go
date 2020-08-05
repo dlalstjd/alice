@@ -15,6 +15,7 @@
 package signer
 
 import (
+	fmt "fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -38,6 +39,11 @@ type Signer struct {
 
 func NewSigner(peerManager types.PeerManager, expectedPubkey *pt.ECPoint, homo homo.Crypto, secret *big.Int, bks map[string]*birkhoffinterpolation.BkParameter, msg []byte, listener types.StateChangedListener) (*Signer, error) {
 	numPeers := peerManager.NumPeers()
+
+	//u0 := big.NewInt(0)
+
+	fmt.Printf("secret: %d\n", secret)
+
 	ph, err := newPubkeyHandler(expectedPubkey, peerManager, homo, secret, bks, msg)
 	if err != nil {
 		log.Warn("Failed to new a public key handler", "err", err)
