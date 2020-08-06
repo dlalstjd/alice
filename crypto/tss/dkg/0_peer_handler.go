@@ -17,6 +17,7 @@ package dkg
 import (
 	"crypto/elliptic"
 	"errors"
+	fmt "fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -56,10 +57,15 @@ type peerHandler struct {
 func newPeerHandler(curve elliptic.Curve, peerManager types.PeerManager, threshold uint32, rank uint32) (*peerHandler, error) {
 	params := curve.Params()
 	fieldOrder := params.N
+	fmt.Printf("fieldOrder: %d\n", params.N)
 	poly, err := polynomial.RandomPolynomial(fieldOrder, threshold-1)
 	if err != nil {
 		return nil, err
 	}
+
+	//u0 for private key reconstruction test( shoud delete )
+	fmt.Printf("-------------------- u0: %d -------------------\n", poly.Get(0))
+
 	// Random x and build bk
 	x, err := utils.RandomPositiveInt(fieldOrder)
 	if err != nil {

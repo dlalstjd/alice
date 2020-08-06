@@ -17,6 +17,7 @@ package signer
 import (
 	"crypto/elliptic"
 	"errors"
+	fmt "fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/commitment"
@@ -121,9 +122,11 @@ func (p *proofAiHandler) Finalize(logger log.Logger) (types.Handler, error) {
 		logger.Warn("R is an identity element")
 		return nil, ErrIndentityR
 	}
+	fmt.Printf("Rx: %d\n", p.r.GetX())
 
 	p.si = buildSi(p.aiMta, p.getN(), p.r.GetX(), p.tmpSi, new(big.Int).SetBytes(p.msg))
 
+	fmt.Printf("Si in 4: %d\n", p.si)
 	p.li, p.vi, p.liProof, p.viCommitmenter, err = buildViCommitter(logger, p.si, p.r)
 	if err != nil {
 		return nil, err

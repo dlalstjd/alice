@@ -40,14 +40,33 @@ func TestSigner(t *testing.T) {
 }
 
 var _ = Describe("Signer", func() {
+	//m := new(big.Int)
+	//m, e := m.SetString("496621322146307976195971503772357094403520212285999975450283309006956812987001578248004813530857600", 10)
+	//if !e {
+	//	log.Println("err")
+	//}
 	var (
 		curve = btcec.S256()
 		msg   = []byte{1, 2, 3}
+		//msg = m.Bytes()
 	)
 
 	DescribeTable("NewSigner()", func(ss [][]*big.Int, gScale *big.Int) {
 		// new peer managers and dkgs
 		expPublic := ecpointgrouplaw.ScalarBaseMult(curve, gScale)
+		/*x := new(big.Int)
+		x, err := x.SetString("85556674236879568521519464397895875853009790432415548013957742860428482257814", 10)
+		if !err {
+			log.Println("error:", err)
+		}
+		y := new(big.Int)
+		y, ok := y.SetString("30994920491134501242484194368073251458639356656492191736687915449103623375987", 10)
+		if !ok {
+			log.Println("error:", ok)
+		}
+
+		expPublic, _ := ecpointgrouplaw.NewECPoint(curve, x, y)
+		*/
 		threshold := len(ss)
 		signers, listeners := newSigners(curve, expPublic, ss, msg)
 		doneChs := make([]chan struct{}, threshold)

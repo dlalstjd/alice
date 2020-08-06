@@ -21,20 +21,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
 	"github.com/getamis/alice/crypto/ecpointgrouplaw"
 	"github.com/getamis/alice/crypto/homo"
 	"github.com/getamis/alice/crypto/homo/cl"
 	"github.com/getamis/alice/crypto/homo/paillier"
 	"github.com/getamis/alice/crypto/tss"
-	"github.com/getamis/alice/crypto/tss/addshare/newpeer"
-	"github.com/getamis/alice/crypto/tss/addshare/oldpeer"
 	"github.com/getamis/alice/crypto/tss/dkg"
 	"github.com/getamis/alice/crypto/tss/message"
 	"github.com/getamis/alice/crypto/tss/message/types"
 	"github.com/getamis/alice/crypto/tss/message/types/mocks"
-	"github.com/getamis/alice/crypto/tss/reshare"
 	"github.com/getamis/alice/crypto/tss/signer"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
@@ -103,6 +99,7 @@ var _ = Describe("TSS", func() {
 		var r *result
 		for id, dkg := range dkgs {
 			dkg.Stop()
+			// build private key for test
 			dkgResult, err := dkg.GetResult()
 			Expect(err).Should(BeNil())
 			if r == nil {
@@ -124,140 +121,146 @@ var _ = Describe("TSS", func() {
 		for _, homoFunc := range homoFuncs {
 			sign(homoFunc, int(threshold), lens, r, listener)
 		}
-
-		By("Step 3: Reshare")
-		reshares := make(map[string]*reshare.Reshare, lens)
-		msgMain = make(map[string]*message.MsgMain, lens)
-		resharePeerManagers := make([]types.PeerManager, lens)
-		for i := 0; i < lens; i++ {
-			id := getID(i)
-			pm := newPeerManager(id, lens-1)
-			pm.setMsgMains(msgMain)
-			resharePeerManagers[i] = pm
-			listener[i].On("OnStateChanged", types.StateInit, types.StateDone).Once()
-			var err error
-			reshares[id], err = reshare.NewReshare(resharePeerManagers[i], threshold, r.publicKey, r.share[id], r.bks, listener[i])
-			Expect(err).Should(BeNil())
-			msgMain[id] = reshares[id].MsgMain
-			reshareResult, err := reshares[id].GetResult()
-			Expect(reshareResult).Should(BeNil())
-			Expect(err).Should(Equal(tss.ErrNotReady))
-			reshares[id].Start()
-		}
-
-		// Send out commit message
-		for fromID, fromD := range reshares {
-			msg := fromD.GetCommitMessage()
-			for toID, toD := range reshares {
-				if fromID == toID {
-					continue
-				}
-				Expect(toD.AddMessage(msg)).Should(BeNil())
+		/*
+			By("Step 3: Reshare")
+			reshares := make(map[string]*reshare.Reshare, lens)
+			msgMain = make(map[string]*message.MsgMain, lens)
+			resharePeerManagers := make([]types.PeerManager, lens)
+			for i := 0; i < lens; i++ {
+				id := getID(i)
+				pm := newPeerManager(id, lens-1)
+				pm.setMsgMains(msgMain)
+				resharePeerManagers[i] = pm
+				listener[i].On("OnStateChanged", types.StateInit, types.StateDone).Once()
+				var err error
+				reshares[id], err = reshare.NewReshare(resharePeerManagers[i], threshold, r.publicKey, r.share[id], r.bks, listener[i])
+				Expect(err).Should(BeNil())
+				msgMain[id] = reshares[id].MsgMain
+				reshareResult, err := reshares[id].GetResult()
+				Expect(reshareResult).Should(BeNil())
+				Expect(err).Should(Equal(tss.ErrNotReady))
+				reshares[id].Start()
 			}
-		}
-		time.Sleep(1 * time.Second)
 
-		// Stop Reshare process and update the share.
-		for id, reshare := range reshares {
-			reshare.Stop()
-			reshareResult, err := reshare.GetResult()
-			Expect(err).Should(BeNil())
-			r.share[id] = reshareResult.Share
-		}
-		assertListener(listener, lens)
+			// Send out commit message
+			for fromID, fromD := range reshares {
+				msg := fromD.GetCommitMessage()
+				for toID, toD := range reshares {
+					if fromID == toID {
+						continue
+					}
+					Expect(toD.AddMessage(msg)).Should(BeNil())
+				}
+			}
+			time.Sleep(1 * time.Second)
 
-		By("Step 4: Signer again")
-		for _, homoFunc := range homoFuncs {
-			sign(homoFunc, int(threshold), lens, r, listener)
-		}
+			// Stop Reshare process and update the share.
+			for id, reshare := range reshares {
+				reshare.Stop()
+				reshareResult, err := reshare.GetResult()
+				Expect(err).Should(BeNil())
+				r.share[id] = reshareResult.Share
+			}
+			assertListener(listener, lens)
 
-		By("Step 5: Add new share")
-		newPeerID := getID(lens)
-		newPeerRank := uint32(0)
+			By("Step 4: Signer again")
+			for _, homoFunc := range homoFuncs {
+				sign(homoFunc, int(threshold), lens, r, listener)
+			}
 
-		var addShareForNew *newpeer.AddShare
-		var addSharesForOld = make(map[string]*oldpeer.AddShare, lens)
-		msgMain = make(map[string]*message.MsgMain, lens+1)
+			By("Step 5: Add new share")
+			newPeerID := getID(lens)
+			newPeerRank := uint32(0)
 
-		pmNew := newPeerManager(newPeerID, lens)
-		pmNew.setMsgMains(msgMain)
-		listenerNew := new(mocks.StateChangedListener)
-		listenerNew.On("OnStateChanged", types.StateInit, types.StateDone).Once()
-		addShareForNew = newpeer.NewAddShare(pmNew, r.publicKey, threshold, newPeerRank, listenerNew)
-		msgMain[newPeerID] = addShareForNew.MsgMain
-		addShareNewResult, err := addShareForNew.GetResult()
-		Expect(addShareNewResult).Should(BeNil())
-		Expect(err).Should(Equal(tss.ErrNotReady))
-		addShareForNew.Start()
+			var addShareForNew *newpeer.AddShare
+			var addSharesForOld = make(map[string]*oldpeer.AddShare, lens)
+			msgMain = make(map[string]*message.MsgMain, lens+1)
 
-		pmOlds := make([]types.PeerManager, lens)
-		listenersOld := make([]*mocks.StateChangedListener, lens)
-		for i := 0; i < lens; i++ {
-			id := getID(i)
-			pm := newPeerManager(id, lens-1)
-			pm.setMsgMains(msgMain)
-			pmOlds[i] = pm
-			listenersOld[i] = new(mocks.StateChangedListener)
-			listenersOld[i].On("OnStateChanged", types.StateInit, types.StateDone).Once()
-			var err error
-			addSharesForOld[id], err = oldpeer.NewAddShare(pmOlds[i], r.publicKey, threshold, r.share[id], r.bks, newPeerID, listenersOld[i])
-			Expect(err).Should(BeNil())
-			msgMain[id] = addSharesForOld[id].MsgMain
-			addShareOldResult, err := addSharesForOld[id].GetResult()
-			Expect(addShareOldResult).Should(BeNil())
+			pmNew := newPeerManager(newPeerID, lens)
+			pmNew.setMsgMains(msgMain)
+			listenerNew := new(mocks.StateChangedListener)
+			listenerNew.On("OnStateChanged", types.StateInit, types.StateDone).Once()
+			addShareForNew = newpeer.NewAddShare(pmNew, r.publicKey, threshold, newPeerRank, listenerNew)
+			msgMain[newPeerID] = addShareForNew.MsgMain
+			addShareNewResult, err := addShareForNew.GetResult()
+			Expect(addShareNewResult).Should(BeNil())
 			Expect(err).Should(Equal(tss.ErrNotReady))
-			addSharesForOld[id].Start()
-		}
+			addShareForNew.Start()
 
-		// Send out all old peer message to new peer
-		for _, fromA := range addSharesForOld {
-			msg := fromA.GetPeerMessage()
-			Expect(addShareForNew.AddMessage(msg)).Should(BeNil())
-		}
-		time.Sleep(1 * time.Second)
+			pmOlds := make([]types.PeerManager, lens)
+			listenersOld := make([]*mocks.StateChangedListener, lens)
+			for i := 0; i < lens; i++ {
+				id := getID(i)
+				pm := newPeerManager(id, lens-1)
+				pm.setMsgMains(msgMain)
+				pmOlds[i] = pm
+				listenersOld[i] = new(mocks.StateChangedListener)
+				listenersOld[i].On("OnStateChanged", types.StateInit, types.StateDone).Once()
+				var err error
+				addSharesForOld[id], err = oldpeer.NewAddShare(pmOlds[i], r.publicKey, threshold, r.share[id], r.bks, newPeerID, listenersOld[i])
+				Expect(err).Should(BeNil())
+				msgMain[id] = addSharesForOld[id].MsgMain
+				addShareOldResult, err := addSharesForOld[id].GetResult()
+				Expect(addShareOldResult).Should(BeNil())
+				Expect(err).Should(Equal(tss.ErrNotReady))
+				addSharesForOld[id].Start()
+			}
 
-		// Stop add share process and check the result.
-		for id, addshare := range addSharesForOld {
-			addshare.Stop()
-			addshareResult, err := addshare.GetResult()
+			// Send out all old peer message to new peer
+			for _, fromA := range addSharesForOld {
+				msg := fromA.GetPeerMessage()
+				Expect(addShareForNew.AddMessage(msg)).Should(BeNil())
+			}
+			time.Sleep(1 * time.Second)
+
+			// Stop add share process and check the result.
+			for id, addshare := range addSharesForOld {
+				addshare.Stop()
+				addshareResult, err := addshare.GetResult()
+				Expect(err).Should(BeNil())
+				Expect(r.publicKey).Should(Equal(addshareResult.PublicKey))
+				Expect(r.share[id]).Should(Equal(addshareResult.Share))
+				Expect(r.bks[id]).Should(Equal(addshareResult.Bks[id]))
+			}
+			addShareForNew.Stop()
+			addshareResult, err := addShareForNew.GetResult()
 			Expect(err).Should(BeNil())
 			Expect(r.publicKey).Should(Equal(addshareResult.PublicKey))
-			Expect(r.share[id]).Should(Equal(addshareResult.Share))
-			Expect(r.bks[id]).Should(Equal(addshareResult.Bks[id]))
-		}
-		addShareForNew.Stop()
-		addshareResult, err := addShareForNew.GetResult()
-		Expect(err).Should(BeNil())
-		Expect(r.publicKey).Should(Equal(addshareResult.PublicKey))
-		Expect(addshareResult.Share).ShouldNot(BeNil())
-		Expect(addshareResult.Bks[newPeerID]).ShouldNot(BeNil())
-		// Update the new peer into result
-		r.share[newPeerID] = addshareResult.Share
-		r.bks[newPeerID] = addshareResult.Bks[newPeerID]
+			Expect(addshareResult.Share).ShouldNot(BeNil())
+			Expect(addshareResult.Bks[newPeerID]).ShouldNot(BeNil())
+			// Update the new peer into result
+			r.share[newPeerID] = addshareResult.Share
+			r.bks[newPeerID] = addshareResult.Bks[newPeerID]
 
-		for i := 0; i < lens; i++ {
-			listenersOld[i].AssertExpectations(GinkgoT())
-		}
-		listenerNew.AssertExpectations(GinkgoT())
-		assertListener(listener, lens)
+			for i := 0; i < lens; i++ {
+				listenersOld[i].AssertExpectations(GinkgoT())
+			}
+			listenerNew.AssertExpectations(GinkgoT())
+			assertListener(listener, lens)
 
-		By("Step 6: Signer again")
-		lens++
-		listener = make([]*mocks.StateChangedListener, lens)
-		for _, homoFunc := range homoFuncs {
-			sign(homoFunc, int(threshold), lens, r, listener)
-		}
+			By("Step 6: Signer again")
+			lens++
+			listener = make([]*mocks.StateChangedListener, lens)
+			for _, homoFunc := range homoFuncs {
+				sign(homoFunc, int(threshold), lens, r, listener)
+			}*/
 	},
 		Entry("P256 curve, 3 of (0,0,0)", elliptic.P256(), uint32(3), []uint32{0, 0, 0}),
-		Entry("S256 curve, 3 of (0,0,0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0, 0, 0}),
-		Entry("S256 curve, 3 of (0,0,0,1,1)", btcec.S256(), uint32(3), []uint32{0, 0, 0, 1, 1}),
-		Entry("S256 curve, 3 of (0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0}),
+		//Entry("S256 curve, 3 of (0,0,0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0, 0, 0}),
+		//Entry("S256 curve, 3 of (0,0,0,1,1)", btcec.S256(), uint32(3), []uint32{0, 0, 0, 1, 1}),
+		//Entry("S256 curve, 3 of (0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0}),
 	)
 })
 
 func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *result, listener []*mocks.StateChangedListener) {
 	combination := combin.Combinations(num, threshold)
-	msg := []byte{1, 2, 3}
+	m := new(big.Int)
+	m, err := m.SetString("112776592097962697685783240107694498043001620406710750579517066424585480949036", 10)
+	if !err {
+		fmt.Printf("err")
+		return
+	}
+	msg := m.Bytes()
 	// Loop over all combinations.
 	for _, c := range combination {
 		signers := make(map[string]*signer.Signer, threshold)
@@ -324,11 +327,17 @@ func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *r
 				s = signerResult.S
 			}
 		}
+		// check r, s
+		fmt.Printf("-------------- r: %d s: %d -------------\n", r, s)
+
 		ecdsaPublicKey := &ecdsa.PublicKey{
 			Curve: dkgResult.publicKey.GetCurve(),
 			X:     dkgResult.publicKey.GetX(),
 			Y:     dkgResult.publicKey.GetY(),
 		}
+
+		//check public key
+		fmt.Printf("------------ X: %d Y: %d -----------\n", ecdsaPublicKey.X, ecdsaPublicKey.Y)
 		Expect(ecdsa.Verify(ecdsaPublicKey, msg, r, s)).Should(BeTrue())
 		assertListener(listener, threshold)
 	}

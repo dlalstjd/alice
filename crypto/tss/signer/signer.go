@@ -41,8 +41,7 @@ func NewSigner(peerManager types.PeerManager, expectedPubkey *pt.ECPoint, homo h
 	numPeers := peerManager.NumPeers()
 
 	//u0 := big.NewInt(0)
-
-	fmt.Printf("secret: %d\n", secret)
+	//fmt.Printf("secret: %d\n", secret)
 
 	ph, err := newPubkeyHandler(expectedPubkey, peerManager, homo, secret, bks, msg)
 	if err != nil {
@@ -85,7 +84,7 @@ func (s *Signer) GetResult() (*Result, error) {
 		log.Error("We cannot convert to result handler in done state")
 		return nil, tss.ErrNotReady
 	}
-
+	fmt.Printf("r: %d s: %d\n", rh.r.GetX(), rh.s)
 	return &Result{
 		R: new(big.Int).Set(rh.r.GetX()),
 		S: new(big.Int).Set(rh.s),
