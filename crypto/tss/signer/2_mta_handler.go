@@ -138,8 +138,8 @@ func (p *mtaHandler) ensurePublickey(logger log.Logger) error {
 			return err
 		}
 	}
-	fmt.Printf("public key: %d\n", sum)
-	fmt.Printf("p.public key: %d\n", p.publicKey)
+	fmt.Printf("public key: %d\n", sum.GetX())
+	fmt.Printf("p.public key: %d\n", p.publicKey.GetX())
 	if !p.publicKey.Equal(sum) {
 		logger.Warn("Unexpected public key", "exp", p.publicKey, "got", sum)
 		return ErrUnexpectedPublickey

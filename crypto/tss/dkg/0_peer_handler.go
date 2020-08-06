@@ -64,8 +64,8 @@ func newPeerHandler(curve elliptic.Curve, peerManager types.PeerManager, thresho
 	}
 
 	//u0 for private key reconstruction test( shoud delete )
-	fmt.Printf("-------------------- u0: %d -------------------\n", poly.Get(0))
-
+	fmt.Printf("-------------------- u0: %s -------------------\n", poly.Get(0).Text(10))
+	fmt.Printf("test: %d\n", poly.Get(0))
 	// Random x and build bk
 	x, err := utils.RandomPositiveInt(fieldOrder)
 	if err != nil {

@@ -221,6 +221,6 @@ func buildWiAndPeers(curveN *big.Int, bks map[string]*birkhoffinterpolation.BkPa
 	}
 	wi := new(big.Int).Mul(secret, scalars[0])
 	wi = new(big.Int).Mod(wi, curveN)
-	fmt.Printf("wi: %d\n", wi)
+	fmt.Printf("wi: %d, uo..?: %d\n", wi, secret)
 	return wi, peers, nil
 }
