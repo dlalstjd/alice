@@ -81,6 +81,7 @@ func (p *BkParameter) getDiffMonomialCoeff(fieldOrder *big.Int, degree uint32) *
 	if degree < p.rank {
 		return big.NewInt(0)
 	}
+	//return big.NewInt(1)
 	if degree == 0 {
 		return big.NewInt(1)
 	}
