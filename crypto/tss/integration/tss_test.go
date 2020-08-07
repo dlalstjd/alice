@@ -277,6 +277,7 @@ func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *r
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("gas Price %d\n", gasPrice)
 	toAddress := common.HexToAddress("0x743376fd2a693723A60942D0b4B2F1765ea1Dbb0")
 	var data []byte
 	tx := core.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
