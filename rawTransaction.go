@@ -41,13 +41,14 @@ func main() {
     //fmt.Printf("%d\n", nonce)
     //var nonce hexutil.Uint644
     //return uint64(nonce)
-
+//r: 39153658421029022908462808005934624410732002136586315892588764602482294455215 s: 10799285876063774691193091987664567774072549064223085328287369594529659705959
     value := big.NewInt(1000000000000000) // in wei (0.001 eth)
     gasLimit := uint64(21000)                // in units
     gasPrice, err := client.SuggestGasPrice(context.Background())
     if err != nil {
         log.Fatal(err)
     }
+    fmt.Printf("%d\n", gasPrice)
 
     toAddress := common.HexToAddress("0x743376fd2a693723A60942D0b4B2F1765ea1Dbb0")
     var data []byte
