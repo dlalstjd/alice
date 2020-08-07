@@ -14,12 +14,21 @@
 package integration
 
 import (
+	"context"
+	//"encoding/hex"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
+	"log"
 	"math/big"
 	"testing"
 	"time"
+
+    "github.com/ethereum/go-ethereum/common"
+    core "github.com/ethereum/go-ethereum/core/types"
+    //"github.com/ethereum/go-ethereum/crypto"
+    "github.com/ethereum/go-ethereum/ethclient"
+    //"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -246,7 +255,7 @@ var _ = Describe("TSS", func() {
 				sign(homoFunc, int(threshold), lens, r, listener)
 			}*/
 	},
-		Entry("P256 curve, 3 of (0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0}),
+		Entry("S256 curve, 3 of (0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0}),
 		//Entry("S256 curve, 3 of (0,0,0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0, 0, 0}),
 		//Entry("S256 curve, 3 of (0,0,0,1,1)", btcec.S256(), uint32(3), []uint32{0, 0, 0, 1, 1}),
 		//Entry("S256 curve, 3 of (0,0,0)", btcec.S256(), uint32(3), []uint32{0, 0, 0}),
@@ -255,13 +264,30 @@ var _ = Describe("TSS", func() {
 
 func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *result, listener []*mocks.StateChangedListener) {
 	combination := combin.Combinations(num, threshold)
-	m := new(big.Int)
-	m, err := m.SetString("112776592097962697685783240107694498043001620406710750579517066424585480949036", 10)
-	if !err {
-		fmt.Printf("err")
-		return
+	
+	client, err := ethclient.Dial("https://ropsten.infura.io/v3/375a84d45ba0456a8d39a32cce31471c")
+	if err != nil{
+		log.Fatal(err)
 	}
-	msg := m.Bytes()
+	
+	nonce := uint64(0)
+	value := big.NewInt(1000000000000000) // 0.001 eth in wei
+	gasLimit := uint64(21000)
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	toAddress := common.HexToAddress("0x743376fd2a693723A60942D0b4B2F1765ea1Dbb0")
+	var data []byte
+	tx := core.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
+
+	chainID, err := client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	h := core.NewEIP155Signer(chainID).Hash(tx)
+
+	msg := h[:]
 	// Loop over all combinations.
 	for _, c := range combination {
 		signers := make(map[string]*signer.Signer, threshold)
