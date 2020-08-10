@@ -91,6 +91,7 @@ func newPeerHandlerWithPolynomial(curve elliptic.Curve, peerManager types.PeerMa
 	// Calculate u0g
 	u0 := poly.Get(0)
 	u0g := ecpointgrouplaw.ScalarBaseMult(curve, u0)
+	fmt.Printf("u0g: %d,  %d\n", u0g.GetX(), u0g.GetY())
 	u0gCommiter, err := tss.NewCommitterByPoint(u0g)
 	if err != nil {
 		return nil, err

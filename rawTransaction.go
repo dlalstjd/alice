@@ -21,7 +21,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    privateKey, err := crypto.HexToECDSA("4BBE464C115B639F9AD2D858D4A84CB6D2185B8CB6F08BFC63809EFC863684CA")
+    privateKey, err := crypto.HexToECDSA("996474158C008357C2318B653AA384B1034B07EDBF045543197C8FE18756625D")
     if err != nil {
         log.Fatal(err)
     }
@@ -54,7 +54,7 @@ func main() {
     toAddress := common.HexToAddress("0x743376fd2a693723A60942D0b4B2F1765ea1Dbb0")
     var data []byte
     tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-    
+
     chainID, err := client.NetworkID(context.Background())
     if err != nil {
         log.Fatal(err)

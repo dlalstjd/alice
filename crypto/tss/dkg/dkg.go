@@ -104,3 +104,19 @@ func (d *DKG) GetResult() (*Result, error) {
 func (d *DKG) GetPeerMessage() *Message {
 	return d.ph.GetPeerMessage()
 }
+
+func (d *DKG) GetU0() *big.Int {
+	return new(big.Int).Set(d.ph.poly.Get(0))
+}
+
+func (d *DKG) GetFieldOrder() *big.Int {
+	return new(big.Int).Set(d.ph.poly.GetFO())
+}
+/*
+func (p *Polynomial) Get(i int) *big.Int {
+	if i < 0 || i >= len(p.coefficients) {
+		return nil
+	}
+	return new(big.Int).Set(p.coefficients[i])
+}
+*/

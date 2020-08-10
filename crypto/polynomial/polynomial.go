@@ -132,3 +132,7 @@ func (p *Polynomial) Degree() uint32 {
 func (p *Polynomial) SetConstant(value *big.Int) {
 	p.coefficients[0] = value
 }
+
+func (p *Polynomial) GetFO() *big.Int {
+	return new(big.Int).Set(p.fieldOrder)
+}

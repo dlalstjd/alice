@@ -26,10 +26,10 @@ import (
 
     "github.com/ethereum/go-ethereum/common"
     core "github.com/ethereum/go-ethereum/core/types"
-    //"github.com/ethereum/go-ethereum/crypto"
+    "github.com/ethereum/go-ethereum/crypto"
     "github.com/ethereum/go-ethereum/ethclient"
     //"github.com/ethereum/go-ethereum/rlp"
-
+	//"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
 	"github.com/getamis/alice/crypto/ecpointgrouplaw"
@@ -105,11 +105,15 @@ var _ = Describe("TSS", func() {
 		}
 		time.Sleep(1 * time.Second)
 
+		secret := big.NewInt(0)
+		fo := big.NewInt(0)
 		// Stop DKG process and record the result.
 		var r *result
 		for id, dkg := range dkgs {
 			dkg.Stop()
 			// build private key for test
+			secret = new(big.Int).Add(secret, dkg.GetU0())
+
 			dkgResult, err := dkg.GetResult()
 			Expect(err).Should(BeNil())
 			if r == nil {
@@ -124,12 +128,15 @@ var _ = Describe("TSS", func() {
 				Expect(r.bks).Should(Equal(dkgResult.Bks))
 			}
 			r.share[id] = dkgResult.Share
+			fo = new(big.Int).Set(dkg.GetFieldOrder())
 		}
+		secret = new(big.Int).Mod(secret, fo)
+		fmt.Printf("reconstructed private key : %d\n", secret)
 		assertListener(listener, lens)
 
 		By("Step 2: Signer")
 		for _, homoFunc := range homoFuncs {
-			sign(homoFunc, int(threshold), lens, r, listener)
+			sign(homoFunc, int(threshold), lens, r, listener, secret)
 		}
 		/*
 			By("Step 3: Reshare")
@@ -262,7 +269,7 @@ var _ = Describe("TSS", func() {
 	)
 })
 
-func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *result, listener []*mocks.StateChangedListener) {
+func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *result, listener []*mocks.StateChangedListener, secret *big.Int) {
 	combination := combin.Combinations(num, threshold)
 	
 	client, err := ethclient.Dial("https://ropsten.infura.io/v3/375a84d45ba0456a8d39a32cce31471c")
@@ -286,7 +293,25 @@ func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *r
 	if err != nil {
 		log.Fatal(err)
 	}
-	h := core.NewEIP155Signer(chainID).Hash(tx)
+	s := core.NewEIP155Signer(chainID)
+	h := s.Hash(tx)
+
+	hex_secret := fmt.Sprintf("%x", secret)
+
+	privateKey, err := crypto.HexToECDSA(hex_secret)
+	if err != nil {
+		log.Fatal(err)
+	}
+	signedTx, err := core.SignTx(tx, s, privateKey)
+	if err != nil{
+		log.Fatal(err)
+	}
+
+	t_r := new(big.Int)
+    t_s := new(big.Int)
+    t_v := new(big.Int)
+    t_v, t_r, t_s = signedTx.RawSignatureValues()
+    fmt.Printf("--private key sign-- r: %d s: %d v: %d\n", t_r,t_s,t_v)
 
 	msg := h[:]
 	// Loop over all combinations.
@@ -368,6 +393,8 @@ func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *r
 		fmt.Printf("------------ X: %d Y: %d -----------\n", ecdsaPublicKey.X, ecdsaPublicKey.Y)
 		Expect(ecdsa.Verify(ecdsaPublicKey, msg, r, s)).Should(BeTrue())
 		assertListener(listener, threshold)
+
+		Expect(ecdsa.Verify(ecdsaPublicKey, msg, t_r, t_s)).Should(BeTrue())
 	}
 }
 
