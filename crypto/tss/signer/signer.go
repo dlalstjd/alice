@@ -84,6 +84,19 @@ func (s *Signer) GetResult() (*Result, error) {
 		log.Error("We cannot convert to result handler in done state")
 		return nil, tss.ErrNotReady
 	}
+
+	// This is copied from:
+	// https://github.com/btcsuite/btcd/blob/c26ffa870fd817666a857af1bf6498fabba1ffe3/btcec/signature.go#L442-L444
+	// This is needed because of tendermint checks here:
+	// https://github.com/tendermint/tendermint/blob/d9481e3648450cb99e15c6a070c1fb69aa0c255b/crypto/secp256k1/secp256k1_nocgo.go#L43-L47
+	sumS := new(big.Int).Set(rh.s)
+
+	curve := s.ph.publicKey.GetCurve()
+	secp256k1halfN := new(big.Int).Rsh(curve.Params().N, 1)
+	if sumS.Cmp(secp256k1halfN) > 0 {
+		sumS.Sub(curve.Params().N, sumS)
+	}
+
 	fmt.Printf("r: %d s: %d\n", rh.r.GetX(), rh.s)
 	return &Result{
 		R: new(big.Int).Set(rh.r.GetX()),
