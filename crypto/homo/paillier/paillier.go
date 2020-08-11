@@ -127,6 +127,7 @@ func NewPaillier(keySize int) (*Paillier, error) {
 }
 
 // Warning: No check the size of public key. This function is only used in Test.
+// check p-q is very large,,
 func NewPaillierUnSafe(keySize int) (*Paillier, error) {
 	p, q, n, lambda, err := getNAndLambda(keySize)
 	if err != nil {
