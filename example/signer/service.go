@@ -16,6 +16,8 @@ package signer
 import (
 	"io/ioutil"
 
+	//"github.com/getamis/alice/crypto/homo/paillier"
+
 	"github.com/getamis/alice/crypto/homo/paillier"
 	"github.com/getamis/alice/crypto/tss/message/types"
 	"github.com/getamis/alice/crypto/tss/signer"
@@ -53,7 +55,15 @@ func NewService(config *SignerConfig, pm types.PeerManager) (*service, error) {
 		log.Warn("Cannot create a paillier function", "err", err)
 		return nil, err
 	}
-
+	/*
+		safeParameter := 1348
+		distributionDistance := uint(40)
+		homo, err := cl.NewCL(big.NewInt(1024), 40, utils.GetCurve().Params().N, safeParameter, distributionDistance)
+		if err != nil {
+			log.Warn("Cannot create a paillier function", "err", err)
+			return nil, err
+		}
+	*/
 	// Create signer
 	signer, err := signer.NewSigner(pm, dkgResult.PublicKey, paillier, dkgResult.Share, dkgResult.Bks, []byte(config.Message), s)
 	if err != nil {

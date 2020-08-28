@@ -17,6 +17,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
+	"log"
 	"math/big"
 	"testing"
 
@@ -34,21 +35,32 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var shareX, _ = new(big.Int).SetString("31542479495515751590858731963602190575265584368168056058241240553976048706250", 10)
+var shareY, _ = new(big.Int).SetString("27573931062764911526434145831603735118937952244895288810543249941466055573838", 10)
+
+var shareX2, _ = new(big.Int).SetString("10416623673675494128062785337122982187821314907507586331105233667252725263783", 10)
+var shareY2, _ = new(big.Int).SetString("19226285755068132059374585505236303898926242826912332889137490888607537496297", 10)
+
+var shareX3, _ = new(big.Int).SetString("88376606366222791732940618106539923774726227365806104625582452027604670887836", 10)
+var shareY3, _ = new(big.Int).SetString("101834687986640284031302743157814852307811364763909266175349318338081923191192", 10)
+
+var privateKey, _ = new(big.Int).SetString("99896347839057094572496063047924422668916407273940760471534415682004519618999", 10)
+
 func TestSigner(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Signer Suite")
 }
 
 var _ = Describe("Signer", func() {
-	//m := new(big.Int)
-	//m, e := m.SetString("496621322146307976195971503772357094403520212285999975450283309006956812987001578248004813530857600", 10)
-	//if !e {
-	//	log.Println("err")
-	//}
+	m := new(big.Int)
+	m, e := m.SetString("11203537542740096584028806018732469078937070920237550214178433999356943013385", 10)
+	if !e {
+		log.Println("err")
+	}
 	var (
 		curve = btcec.S256()
-		msg   = []byte{1, 2, 3}
-		//msg = m.Bytes()
+		//msg   = []byte{1, 2, 3}
+		msg = m.Bytes()
 	)
 
 	DescribeTable("NewSigner()", func(ss [][]*big.Int, gScale *big.Int) {
@@ -128,42 +140,43 @@ var _ = Describe("Signer", func() {
 		for _, l := range listeners {
 			l.AssertExpectations(GinkgoT())
 		}
-	},
+	}, //x, secret, rank
 		Entry("(shareX, shareY, rank):(1,3,0),(10,111,0),(20,421,0)", [][]*big.Int{
-			{big.NewInt(1), big.NewInt(3), big.NewInt(0)},
-			{big.NewInt(10), big.NewInt(111), big.NewInt(0)},
-			{big.NewInt(20), big.NewInt(421), big.NewInt(0)},
-		}, big.NewInt(1)),
-		Entry("(shareX, shareY, rank):(108,4517821,0),(344,35822,1),(756,46,2)", [][]*big.Int{
-			{big.NewInt(108), big.NewInt(4517821), big.NewInt(0)},
-			{big.NewInt(344), big.NewInt(35822), big.NewInt(1)},
-			{big.NewInt(756), big.NewInt(46), big.NewInt(2)},
-		}, big.NewInt(2089765)),
-		Entry("(shareX, shareY, rank):(53,2816277,0),(24,48052,1),(96,9221170,0)", [][]*big.Int{
-			{big.NewInt(53), big.NewInt(2816277), big.NewInt(0)},
-			{big.NewInt(24), big.NewInt(48052), big.NewInt(1)},
-			{big.NewInt(96), big.NewInt(9221170), big.NewInt(0)},
-		}, big.NewInt(4786)),
-		Entry("(shareX, shareY, rank):(756,1408164810,0),(59887,285957312,1),(817291849,3901751343900,1)", [][]*big.Int{
-			{big.NewInt(756), big.NewInt(1408164810), big.NewInt(0)},
-			{big.NewInt(59887), big.NewInt(285957312), big.NewInt(1)},
-			{big.NewInt(817291849), big.NewInt(3901751343900), big.NewInt(1)},
-		}, big.NewInt(987234)),
-		Entry("(shareX, shareY, rank):(999,1990866633,0),(877,1535141367,1),(6542,85090458377,1)", [][]*big.Int{
-			{big.NewInt(999), big.NewInt(1990866633), big.NewInt(0)},
-			{big.NewInt(877), big.NewInt(1535141367), big.NewInt(0)},
-			{big.NewInt(6542), big.NewInt(85090458377), big.NewInt(0)},
-		}, big.NewInt(5487)),
-		Entry("(shareX, shareY, rank):(1094,591493497,0),(59887,58337825,1),(6542,20894113809,0)", [][]*big.Int{
-			{big.NewInt(1094), big.NewInt(591493497), big.NewInt(0)},
-			{big.NewInt(59887), big.NewInt(58337825), big.NewInt(1)},
-			{big.NewInt(6542), big.NewInt(20894113809), big.NewInt(0)},
-		}, big.NewInt(5987)),
-		Entry("(shareX, shareY, rank):(404,1279853690,0),(99555,1548484036,1),(64444,15554,2)", [][]*big.Int{
-			{big.NewInt(404), big.NewInt(1279853690), big.NewInt(0)},
-			{big.NewInt(99555), big.NewInt(1548484036), big.NewInt(1)},
-			{big.NewInt(64444), big.NewInt(15554), big.NewInt(2)},
-		}, big.NewInt(8274194)),
+			{shareX, shareY, big.NewInt(0)},
+			{shareX2, shareY2, big.NewInt(0)},
+			{shareX3, shareY3, big.NewInt(0)},
+		}, privateKey), // private key
+		/*
+			Entry("(shareX, shareY, rank):(108,4517821,0),(344,35822,1),(756,46,2)", [][]*big.Int{
+				{big.NewInt(108), big.NewInt(4517821), big.NewInt(0)},
+				{big.NewInt(344), big.NewInt(35822), big.NewInt(1)},
+				{big.NewInt(756), big.NewInt(46), big.NewInt(2)},
+			}, big.NewInt(2089765)),
+			Entry("(shareX, shareY, rank):(53,2816277,0),(24,48052,1),(96,9221170,0)", [][]*big.Int{
+				{big.NewInt(53), big.NewInt(2816277), big.NewInt(0)},
+				{big.NewInt(24), big.NewInt(48052), big.NewInt(1)},
+				{big.NewInt(96), big.NewInt(9221170), big.NewInt(0)},
+			}, big.NewInt(4786)),
+			Entry("(shareX, shareY, rank):(756,1408164810,0),(59887,285957312,1),(817291849,3901751343900,1)", [][]*big.Int{
+				{big.NewInt(756), big.NewInt(1408164810), big.NewInt(0)},
+				{big.NewInt(59887), big.NewInt(285957312), big.NewInt(1)},
+				{big.NewInt(817291849), big.NewInt(3901751343900), big.NewInt(1)},
+			}, big.NewInt(987234)),
+			Entry("(shareX, shareY, rank):(999,1990866633,0),(877,1535141367,1),(6542,85090458377,1)", [][]*big.Int{
+				{big.NewInt(999), big.NewInt(1990866633), big.NewInt(0)},
+				{big.NewInt(877), big.NewInt(1535141367), big.NewInt(0)},
+				{big.NewInt(6542), big.NewInt(85090458377), big.NewInt(0)},
+			}, big.NewInt(5487)),
+			Entry("(shareX, shareY, rank):(1094,591493497,0),(59887,58337825,1),(6542,20894113809,0)", [][]*big.Int{
+				{big.NewInt(1094), big.NewInt(591493497), big.NewInt(0)},
+				{big.NewInt(59887), big.NewInt(58337825), big.NewInt(1)},
+				{big.NewInt(6542), big.NewInt(20894113809), big.NewInt(0)},
+			}, big.NewInt(5987)),
+			Entry("(shareX, shareY, rank):(404,1279853690,0),(99555,1548484036,1),(64444,15554,2)", [][]*big.Int{
+				{big.NewInt(404), big.NewInt(1279853690), big.NewInt(0)},
+				{big.NewInt(99555), big.NewInt(1548484036), big.NewInt(1)},
+				{big.NewInt(64444), big.NewInt(15554), big.NewInt(2)},
+			}, big.NewInt(8274194)),*/
 	)
 })
 

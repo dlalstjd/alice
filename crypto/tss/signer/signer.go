@@ -15,6 +15,7 @@
 package signer
 
 import (
+	"crypto/ecdsa"
 	fmt "fmt"
 	"math/big"
 
@@ -39,7 +40,6 @@ type Signer struct {
 
 func NewSigner(peerManager types.PeerManager, expectedPubkey *pt.ECPoint, homo homo.Crypto, secret *big.Int, bks map[string]*birkhoffinterpolation.BkParameter, msg []byte, listener types.StateChangedListener) (*Signer, error) {
 	numPeers := peerManager.NumPeers()
-
 	//u0 := big.NewInt(0)
 	//fmt.Printf("secret: %d\n", secret)
 
@@ -97,9 +97,17 @@ func (s *Signer) GetResult() (*Result, error) {
 		sumS.Sub(curve.Params().N, sumS)
 	}
 
-	fmt.Printf("r: %d s: %d\n", rh.r.GetX(), rh.s)
+	fmt.Printf("r: %d s: %d sumS: %d\n", rh.r.GetX(), rh.s, sumS)
+
+	ecdsaPublicKey := &ecdsa.PublicKey{
+		Curve: s.ph.publicKey.GetCurve(),
+		X:     s.ph.publicKey.GetX(),
+		Y:     s.ph.publicKey.GetY(),
+	}
+	fmt.Print(ecdsa.Verify(ecdsaPublicKey, s.ph.msg, rh.r.GetX(), sumS))
+	fmt.Print(s.ph.msg)
 	return &Result{
 		R: new(big.Int).Set(rh.r.GetX()),
-		S: new(big.Int).Set(rh.s),
+		S: new(big.Int).Set(sumS),
 	}, nil
 }
