@@ -35,6 +35,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// temporary values for sign bitcoin transaction
 var shareX, _ = new(big.Int).SetString("31542479495515751590858731963602190575265584368168056058241240553976048706250", 10)
 var shareY, _ = new(big.Int).SetString("27573931062764911526434145831603735118937952244895288810543249941466055573838", 10)
 
@@ -52,6 +53,7 @@ func TestSigner(t *testing.T) {
 }
 
 var _ = Describe("Signer", func() {
+	// m is transaction( message to sign ). could be calculated by transaction, not here
 	m := new(big.Int)
 	m, e := m.SetString("11203537542740096584028806018732469078937070920237550214178433999356943013385", 10)
 	if !e {
@@ -59,26 +61,12 @@ var _ = Describe("Signer", func() {
 	}
 	var (
 		curve = btcec.S256()
-		//msg   = []byte{1, 2, 3}
-		msg = m.Bytes()
+		msg   = m.Bytes()
 	)
 
 	DescribeTable("NewSigner()", func(ss [][]*big.Int, gScale *big.Int) {
 		// new peer managers and dkgs
 		expPublic := ecpointgrouplaw.ScalarBaseMult(curve, gScale)
-		/*x := new(big.Int)
-		x, err := x.SetString("85556674236879568521519464397895875853009790432415548013957742860428482257814", 10)
-		if !err {
-			log.Println("error:", err)
-		}
-		y := new(big.Int)
-		y, ok := y.SetString("30994920491134501242484194368073251458639356656492191736687915449103623375987", 10)
-		if !ok {
-			log.Println("error:", ok)
-		}
-
-		expPublic, _ := ecpointgrouplaw.NewECPoint(curve, x, y)
-		*/
 		threshold := len(ss)
 		signers, listeners := newSigners(curve, expPublic, ss, msg)
 		doneChs := make([]chan struct{}, threshold)
@@ -140,12 +128,15 @@ var _ = Describe("Signer", func() {
 		for _, l := range listeners {
 			l.AssertExpectations(GinkgoT())
 		}
-	}, //x, secret, rank
+	}, // shareX: brikhoff coefficient x-coordinate
+		// shareY: share
+		// rank: rank( *we do not need this, so must set 0 for all participates)
+		// gScale: private key( *Cause this is just test, put private key so can calculate public key)
 		Entry("(shareX, shareY, rank):(1,3,0),(10,111,0),(20,421,0)", [][]*big.Int{
 			{shareX, shareY, big.NewInt(0)},
 			{shareX2, shareY2, big.NewInt(0)},
 			{shareX3, shareY3, big.NewInt(0)},
-		}, privateKey), // private key
+		}, privateKey),
 		/*
 			Entry("(shareX, shareY, rank):(108,4517821,0),(344,35822,1),(756,46,2)", [][]*big.Int{
 				{big.NewInt(108), big.NewInt(4517821), big.NewInt(0)},

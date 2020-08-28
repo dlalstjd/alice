@@ -15,7 +15,6 @@
 package signer
 
 import (
-	"crypto/ecdsa"
 	fmt "fmt"
 	"math/big"
 
@@ -96,16 +95,8 @@ func (s *Signer) GetResult() (*Result, error) {
 	if sumS.Cmp(secp256k1halfN) > 0 {
 		sumS.Sub(curve.Params().N, sumS)
 	}
-
+	// sumS should be used for bitcoin or ethereum
 	fmt.Printf("r: %d s: %d sumS: %d\n", rh.r.GetX(), rh.s, sumS)
-
-	ecdsaPublicKey := &ecdsa.PublicKey{
-		Curve: s.ph.publicKey.GetCurve(),
-		X:     s.ph.publicKey.GetX(),
-		Y:     s.ph.publicKey.GetY(),
-	}
-	fmt.Print(ecdsa.Verify(ecdsaPublicKey, s.ph.msg, rh.r.GetX(), sumS))
-	fmt.Print(s.ph.msg)
 	return &Result{
 		R: new(big.Int).Set(rh.r.GetX()),
 		S: new(big.Int).Set(sumS),

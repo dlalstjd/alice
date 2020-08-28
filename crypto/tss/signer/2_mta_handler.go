@@ -16,7 +16,6 @@ package signer
 
 import (
 	"errors"
-	fmt "fmt"
 	"math/big"
 
 	pt "github.com/getamis/alice/crypto/ecpointgrouplaw"
@@ -127,19 +126,17 @@ func (p *mtaHandler) getDeltaMessage() *Message {
 }
 
 // Expect the sum of wg is the expected public key
+// calculated in same way as in dkg
 func (p *mtaHandler) ensurePublickey(logger log.Logger) error {
 	var err error
 	sum := p.wiG
 	for id, peer := range p.peers {
-		fmt.Printf("wiG: %d\n", peer.mta.wiG)
 		sum, err = sum.Add(peer.mta.wiG)
 		if err != nil {
 			logger.Warn("Failed to add wg", "id", id, "err", err)
 			return err
 		}
 	}
-	fmt.Printf("public key: %d\n", sum.GetX())
-	fmt.Printf("p.public key: %d\n", p.publicKey.GetX())
 	if !p.publicKey.Equal(sum) {
 		logger.Warn("Unexpected public key", "exp", p.publicKey, "got", sum)
 		return ErrUnexpectedPublickey

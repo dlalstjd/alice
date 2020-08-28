@@ -105,6 +105,7 @@ func (d *DKG) GetPeerMessage() *Message {
 	return d.ph.GetPeerMessage()
 }
 
+// these 2 function is just for test( private key reconstruction )
 func (d *DKG) GetU0() *big.Int {
 	return new(big.Int).Set(d.ph.poly.Get(0))
 }
@@ -112,6 +113,7 @@ func (d *DKG) GetU0() *big.Int {
 func (d *DKG) GetFieldOrder() *big.Int {
 	return new(big.Int).Set(d.ph.poly.GetFO())
 }
+
 /*
 func (p *Polynomial) Get(i int) *big.Int {
 	if i < 0 || i >= len(p.coefficients) {

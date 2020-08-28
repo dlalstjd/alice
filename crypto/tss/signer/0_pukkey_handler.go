@@ -41,12 +41,12 @@ type pubkeyData struct {
 }
 
 type pubkeyHandler struct {
-	wi        *big.Int //birkhoff coeffiecient
+	wi        *big.Int
 	msg       []byte
 	publicKey *pt.ECPoint
 
 	g              *pt.ECPoint
-	aiMta          mta.Mta // random a & k
+	aiMta          mta.Mta
 	homo           homo.Crypto
 	agCommitmenter *commitment.HashCommitmenter
 
@@ -219,8 +219,11 @@ func buildWiAndPeers(curveN *big.Int, bks map[string]*birkhoffinterpolation.BkPa
 		log.Warn("Failed to compute bk coefficient", "allBks", allBks, "err", err)
 		return nil, nil, err
 	}
+
 	wi := new(big.Int).Mul(secret, scalars[0])
 	wi = new(big.Int).Mod(wi, curveN)
-	fmt.Printf("wi: %d, uo..?: %d\n", wi, secret)
+	// calculate wi from share & brikhoff coefficient( wi = share * brikhoff coefficient)
+	// sigma wi for all i is private key
+	fmt.Printf("wi: %d, share: %d\n", wi, secret)
 	return wi, peers, nil
 }

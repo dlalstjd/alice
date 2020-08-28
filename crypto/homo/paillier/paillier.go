@@ -36,7 +36,7 @@ const (
 	// maxGenG defines the max retries to generate G
 	maxGenG = 100
 
-	pQBitLenDifference = 3 
+	pQBitLenDifference = 3
 )
 
 var (
@@ -225,13 +225,13 @@ func getNAndLambda(keySize int) (*big.Int, *big.Int, *big.Int, *big.Int, error) 
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
-		
-		// check p-q is also very large
+
+		// check p-q is very large, should be large
 		tmp := new(big.Int)
 		if tmp.Sub(p, q).BitLen() >= (keySize/2)-pQBitLenDifference {
 			continue
 		}
-		
+
 		// Because the bit length of p and q are the same and p!= q, GCD(p, q)=1.
 		if p.Cmp(q) == 0 {
 			continue

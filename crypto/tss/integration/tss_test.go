@@ -24,11 +24,12 @@ import (
 	"testing"
 	"time"
 
-    "github.com/ethereum/go-ethereum/common"
-    core "github.com/ethereum/go-ethereum/core/types"
-    "github.com/ethereum/go-ethereum/crypto"
-    "github.com/ethereum/go-ethereum/ethclient"
-    //"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	core "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+
+	//"github.com/ethereum/go-ethereum/rlp"
 	//"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -61,6 +62,8 @@ var _ = Describe("TSS", func() {
 		listener := make([]*mocks.StateChangedListener, lens)
 
 		// homo functions for signer
+		// when signing, using homomorphic encrpytion for secret value k
+		// there are 2 ways to do, which one is paillier, the other cl
 		homoFuncs := []func() (homo.Crypto, error){
 			func() (homo.Crypto, error) {
 				return paillier.NewPaillier(2048)
@@ -111,7 +114,9 @@ var _ = Describe("TSS", func() {
 		var r *result
 		for id, dkg := range dkgs {
 			dkg.Stop()
+
 			// build private key for test
+			// ** dkg.GetU0 is made by me for test **
 			secret = new(big.Int).Add(secret, dkg.GetU0())
 
 			dkgResult, err := dkg.GetResult()
@@ -128,6 +133,7 @@ var _ = Describe("TSS", func() {
 				Expect(r.bks).Should(Equal(dkgResult.Bks))
 			}
 			r.share[id] = dkgResult.Share
+			// ** dkg.GetFieldOrder is made by me for test **
 			fo = new(big.Int).Set(dkg.GetFieldOrder())
 		}
 		secret = new(big.Int).Mod(secret, fo)
@@ -135,9 +141,12 @@ var _ = Describe("TSS", func() {
 		assertListener(listener, lens)
 
 		By("Step 2: Signer")
+		// test for all 2 homomorphic encryption function
 		for _, homoFunc := range homoFuncs {
 			sign(homoFunc, int(threshold), lens, r, listener, secret)
 		}
+
+		// ignore reshare and so on
 		/*
 			By("Step 3: Reshare")
 			reshares := make(map[string]*reshare.Reshare, lens)
@@ -271,12 +280,12 @@ var _ = Describe("TSS", func() {
 
 func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *result, listener []*mocks.StateChangedListener, secret *big.Int) {
 	combination := combin.Combinations(num, threshold)
-	
+
 	client, err := ethclient.Dial("https://ropsten.infura.io/v3/375a84d45ba0456a8d39a32cce31471c")
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
-	
+	// make ethereum transaction for sign
 	nonce := uint64(0)
 	value := big.NewInt(1000000000000000) // 0.001 eth in wei
 	gasLimit := uint64(21000)
@@ -298,20 +307,23 @@ func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *r
 
 	hex_secret := fmt.Sprintf("%x", secret)
 
+	// get private key for signature verifing test
+	// should be deleted when using in real
 	privateKey, err := crypto.HexToECDSA(hex_secret)
 	if err != nil {
 		log.Fatal(err)
 	}
 	signedTx, err := core.SignTx(tx, s, privateKey)
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 
+	// r, s, v value from signature signed by private key
 	t_r := new(big.Int)
-    t_s := new(big.Int)
-    t_v := new(big.Int)
-    t_v, t_r, t_s = signedTx.RawSignatureValues()
-    fmt.Printf("--private key sign-- r: %d s: %d v: %d\n", t_r,t_s,t_v)
+	t_s := new(big.Int)
+	t_v := new(big.Int)
+	t_v, t_r, t_s = signedTx.RawSignatureValues()
+	fmt.Printf("--private key sign--\n r: %d s: %d v: %d\n", t_r, t_s, t_v)
 
 	msg := h[:]
 	// Loop over all combinations.
@@ -380,7 +392,7 @@ func sign(homoFunc func() (homo.Crypto, error), threshold, num int, dkgResult *r
 				s = signerResult.S
 			}
 		}
-		// check r, s
+		// r, s value from tss
 		fmt.Printf("-------------- r: %d s: %d -------------\n", r, s)
 
 		ecdsaPublicKey := &ecdsa.PublicKey{

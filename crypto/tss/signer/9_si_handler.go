@@ -16,7 +16,6 @@ package signer
 
 import (
 	"errors"
-	fmt "fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/tss/message/types"
@@ -82,9 +81,7 @@ func (p *siHandler) Finalize(logger log.Logger) (types.Handler, error) {
 	p.s = new(big.Int).Set(p.si)
 	for _, peer := range p.peers {
 		p.s = new(big.Int).Add(p.s, peer.si.si)
-		fmt.Printf(" si: %d \n", peer.si.si)
 	}
-	fmt.Printf("S value: %d\n", p.s)
 	p.s.Mod(p.s, p.getCurve().Params().N)
 	if p.s.Cmp(big0) == 0 {
 		return nil, ErrZeroS
